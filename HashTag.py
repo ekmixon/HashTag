@@ -69,15 +69,17 @@ t 5.0+ PBKDF2-HMAC-RipeMD160 boot-mode': '624Y', 'TrueCrypt 5.0+': '62XY', 'AIX 
 
 #Check whether a string consists of only hexadecimal characters.
 def isHex(singleString):
-    for c in singleString:
-        if not c in string.hexdigits: return False
-    return True
+    return all(c in string.hexdigits for c in singleString)
 
 #Check whether a string consists of hexadecimal characters or '.' or '/'
 def isAlphaDotSlash(singleString):
-    for c in singleString:
-        if not c in string.ascii_letters and not c in string.digits and not c in '.' and not c in '/': return False
-    return True
+    return not any(
+        c not in string.ascii_letters
+        and c not in string.digits
+        and c not in '.'
+        and c not in '/'
+        for c in singleString
+    )
 
 #Identifies a single hash string based on attributes such as character length, character type (hex, alphanum, etc.), and specific substring identifiers.
 #These conditional statements are ordered specifically to address efficiency when dealing with large inputs
@@ -178,11 +180,14 @@ def identifyHash(singleHash):
             hashDict[singleHash] = ['NetNTLMv2', 'NetNTLMv1-VANILLA / NetNTLMv1+ESS']
         elif singleHash.count(':') == 2 and '@' not in singleHash:
             hashDict[singleHash] = ['MD5(Chap)']
-        elif singleHash.count(':') == 3 or singleHash.count(':') == 6:
+        elif singleHash.count(':') in [3, 6]:
             hashDict[singleHash] = ['Domain Cached Credentials, mscash']
             try:
                 hashDict[singleHash.split(':')[3]] = 'NTLM'
-                if not singleHash.split(':')[2] == 'aad3b435b51404eeaad3b435b51404ee' and not singleHash.split(':')[2] == 'aad3b435b51404eeaad3b435b51404ee'.upper():
+                if singleHash.split(':')[2] not in [
+                    'aad3b435b51404eeaad3b435b51404ee',
+                    'aad3b435b51404eeaad3b435b51404ee'.upper(),
+                ]:
                     hashDict[singleHash.split(':')[2]] = 'LM'
             except Exception as e:
                 pass
